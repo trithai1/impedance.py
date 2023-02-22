@@ -1,3 +1,4 @@
+from .my_fitting import my_circuit_fit
 from .fitting import circuit_fit, buildCircuit
 from .fitting import calculateCircuitLength, check_and_eval
 from impedance.visualization import plot_altair, plot_bode, plot_nyquist
@@ -372,7 +373,69 @@ class BaseCircuit:
                 self.conf_ = np.array(json_data["Confidence"])
 
 
-class Randles(BaseCircuit):
+class MyBaseCircuit(BaseCircuit):
+    def __init__(self, initial_guess=None, constants=None, name=None):
+        if initial_guess is None:
+            initial_guess = []
+
+        super().__init__(initial_guess, constants, name)
+
+    def fit(self, frequencies, impedance, bounds=None,
+            weight_by_modulus=False, **kwargs):
+        """ Fit the circuit model
+
+        Parameters
+        ----------
+        frequencies: numpy array
+            Frequencies
+
+        impedance: numpy array of dtype 'complex128'
+            Impedance values to fit
+
+        bounds: 2-tuple of array_like, optional
+            Lower and upper bounds on parameters. Defaults to bounds on all
+            parameters of 0 and np.inf, except the CPE alpha
+            which has an upper bound of 1
+
+        weight_by_modulus : bool, optional
+            Uses the modulus of each data (|Z|) as the weighting factor.
+            Standard weighting scheme when experimental variances are
+            unavailable. Only applicable when global_opt = False
+
+        kwargs :
+            Keyword arguments passed to
+            impedance.models.circuits.fitting.circuit_fit,
+            and subsequently to scipy.optimize.curve_fit
+            or scipy.optimize.basinhopping
+
+        Returns
+        -------
+        self: returns an instance of self
+
+        """
+        frequencies = np.array(frequencies, dtype=float)
+        impedance = np.array(impedance, dtype=complex)
+
+        if len(frequencies) != len(impedance):
+            raise TypeError('length of frequencies and impedance do not match')
+
+        if self.initial_guess != []:
+            parameters, conf = my_circuit_fit(frequencies, impedance,
+                                              self.circuit, self.initial_guess,
+                                              constants=self.constants,
+                                              bounds=bounds,
+                                              weight_by_modulus=weight_by_modulus,
+                                              **kwargs)
+            self.parameters_ = parameters
+            if conf is not None:
+                self.conf_ = conf
+        else:
+            raise ValueError('No initial guess supplied')
+
+        return self
+
+
+class Randles(MyBaseCircuit):
     """ A Randles circuit model class """
     def __init__(self, CPE=False, **kwargs):
         """ Constructor for the Randles' circuit class
@@ -405,7 +468,7 @@ class Randles(BaseCircuit):
                              f'the circuit length ({circuit_len})')
 
 
-class CustomCircuit(BaseCircuit):
+class CustomCircuit(MyBaseCircuit):
     def __init__(self, circuit='', **kwargs):
         """ Constructor for a customizable equivalent circuit model
 
@@ -434,6 +497,47 @@ class CustomCircuit(BaseCircuit):
         self.circuit = circuit.replace(" ", "")
 
         circuit_len = calculateCircuitLength(self.circuit)
+
+        if len(self.initial_guess) + len(self.constants) != circuit_len:
+            raise ValueError('The number of initial guesses ' +
+                             f'({len(self.initial_guess)}) + ' +
+                             'the number of constants ' +
+                             f'({len(self.constants)})' +
+                             ' must be equal to ' +
+                             f'the circuit length ({circuit_len})')
+
+
+class MyCustomCircuit(MyBaseCircuit):
+    def __init__(self, circuit='', **kwargs):
+        """ Constructor for a customizable equivalent circuit model
+
+        Parameters
+        ----------
+        initial_guess: numpy array
+            Initial guess of the circuit values
+
+        circuit: string
+            A string that should be interpreted as an equivalent circuit
+
+        Notes
+        -----
+        A custom circuit is defined as a string comprised of elements in series
+        (separated by a `-`) and elements in parallel (grouped as (x,y)).
+        Each element can be appended with an integer (e.g. R0) or an underscore
+        and an integer (e.g. CPE_1) to make keeping track of multiple elements
+        of the same type easier.
+
+        Example:
+            Randles circuit is given by 'R0-p(R1-Wo1,C1)'
+
+        """
+
+        super().__init__(**kwargs)
+        self.circuit = circuit.replace(" ", "")
+
+        circuit_len = calculateCircuitLength(self.circuit)
+        if len(self.initial_guess) == 0:
+            self.initial_guess = [1] * circuit_len
 
         if len(self.initial_guess) + len(self.constants) != circuit_len:
             raise ValueError('The number of initial guesses ' +
