@@ -105,7 +105,7 @@ def my_circuit_fit(frequencies, impedances, circuit, initial_guess, constants={}
 
         else:
             kwargs.pop('fit_bode')
-            popt, pcov = curve_fit(wrapCircuit(circuit, constants), f,
+            popt, pcov = curve_fit(wrapCircuit(circuit, constants, cir, flag=True), f,
                                    np.hstack([Z.real, Z.imag]),
                                    p0=initial_guess, bounds=bounds, **kwargs)
 
