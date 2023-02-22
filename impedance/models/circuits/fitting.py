@@ -216,8 +216,13 @@ def circuit_fit(frequencies, impedances, circuit, initial_guess, constants={},
     return popt, perror
 
 
-def wrapCircuit(circuit, constants):
+def wrapCircuit(circuit, constants, cir, flag):
     """ wraps function so we can pass the circuit string """
+    def replace_string(s, m):
+        for key, val in reversed(m.items()):
+            s = s.replace(f"'{key}'", str(val))
+        return s
+
     def wrappedCircuit(frequencies, *parameters):
         """ returns a stacked array of real and imaginary impedance
         components
@@ -234,14 +239,15 @@ def wrapCircuit(circuit, constants):
         array of floats
 
         """
+        params = [f'P{i}' for i in range(len(parameters))]
+        param_values = dict(zip(params, parameters))
 
-        x = eval(buildCircuit(circuit, frequencies, *parameters,
-                              constants=constants, eval_string='',
-                              index=0)[0],
-                 circuit_elements)
+        x = eval(replace_string(cir, param_values), circuit_elements)
         y_real = np.real(x)
         y_imag = np.imag(x)
-
+        y = y_real + 1j * y_imag
+        if flag:
+            return np.hstack([np.abs(y), np.angle(y, deg=True)])
         return np.hstack([y_real, y_imag])
     return wrappedCircuit
 
