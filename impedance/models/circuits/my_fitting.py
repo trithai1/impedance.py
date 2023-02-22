@@ -4,7 +4,7 @@ import numpy as np
 from scipy.linalg import inv
 from scipy.optimize import curve_fit, basinhopping
 
-from .elements import circuit_elements, get_element_from_name
+from .fitting import set_default_bounds, buildCircuit, wrapCircuit, rmse
 
 ints = '0123456789'
 
