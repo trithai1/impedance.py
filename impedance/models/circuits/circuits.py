@@ -1,4 +1,4 @@
-from .my_fitting import my_circuit_fit
+from .sb_fitting import sb_circuit_fit
 from .fitting import circuit_fit, buildCircuit
 from .fitting import calculateCircuitLength, check_and_eval
 from impedance.visualization import plot_altair, plot_bode, plot_nyquist
@@ -373,7 +373,7 @@ class BaseCircuit:
                 self.conf_ = np.array(json_data["Confidence"])
 
 
-class MyBaseCircuit(BaseCircuit):
+class SbBaseCircuit(BaseCircuit):
     def __init__(self, initial_guess=None, constants=None, name=None):
         if initial_guess is None:
             initial_guess = []
@@ -420,7 +420,7 @@ class MyBaseCircuit(BaseCircuit):
             raise TypeError('length of frequencies and impedance do not match')
 
         if self.initial_guess != []:
-            parameters, conf = my_circuit_fit(frequencies, impedance,
+            parameters, conf = sb_circuit_fit(frequencies, impedance,
                                               self.circuit, self.initial_guess,
                                               constants=self.constants,
                                               bounds=bounds,
@@ -435,7 +435,10 @@ class MyBaseCircuit(BaseCircuit):
         return self
 
 
-class Randles(MyBaseCircuit):
+BaseCircuit = SbBaseCircuit
+
+
+class Randles(BaseCircuit):
     """ A Randles circuit model class """
     def __init__(self, CPE=False, **kwargs):
         """ Constructor for the Randles' circuit class
@@ -468,7 +471,7 @@ class Randles(MyBaseCircuit):
                              f'the circuit length ({circuit_len})')
 
 
-class CustomCircuit(MyBaseCircuit):
+class CustomCircuit(BaseCircuit):
     def __init__(self, circuit='', **kwargs):
         """ Constructor for a customizable equivalent circuit model
 
@@ -507,7 +510,7 @@ class CustomCircuit(MyBaseCircuit):
                              f'the circuit length ({circuit_len})')
 
 
-class MyCustomCircuit(MyBaseCircuit):
+class SbCustomCircuit(CustomCircuit):
     def __init__(self, circuit='', **kwargs):
         """ Constructor for a customizable equivalent circuit model
 
@@ -546,3 +549,6 @@ class MyCustomCircuit(MyBaseCircuit):
                              f'({len(self.constants)})' +
                              ' must be equal to ' +
                              f'the circuit length ({circuit_len})')
+
+
+CustomCircuit = SbCustomCircuit

@@ -9,70 +9,12 @@ from .fitting import set_default_bounds, buildCircuit, wrapCircuit, rmse
 ints = '0123456789'
 
 
-def my_circuit_fit(frequencies, impedances, circuit, initial_guess, constants={},
-                bounds=None, weight_by_modulus=False, global_opt=False,
-                **kwargs):
+def sb_circuit_fit(frequencies, impedances, circuit, initial_guess, constants={},
+                   bounds=None, weight_by_modulus=False, global_opt=False,
+                   **kwargs):
 
     """ Main function for fitting an equivalent circuit to data.
-
-    By default, this function uses `scipy.optimize.curve_fit
-    <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html>`_
-    to fit the equivalent circuit. This function generally works well for
-    simple circuits. However, the final results may be sensitive to
-    the initial conditions for more complex circuits. In these cases,
-    the `scipy.optimize.basinhopping
-    <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.basinhopping.html>`_
-    global optimization algorithm can be used to attempt a better fit.
-
-    Parameters
-    -----------------
-    frequencies : numpy array
-        Frequencies
-
-    impedances : numpy array of dtype 'complex128'
-        Impedances
-
-    circuit : string
-        String defining the equivalent circuit to be fit
-
-    initial_guess : list of floats
-        Initial guesses for the fit parameters
-
-    constants : dictionary, optional
-        Parameters and their values to hold constant during fitting
-        (e.g. {"RO": 0.1}). Defaults to {}
-
-    bounds : 2-tuple of array_like, optional
-        Lower and upper bounds on parameters. Defaults to bounds on all
-        parameters of 0 and np.inf, except the CPE alpha
-        which has an upper bound of 1
-
-    weight_by_modulus : bool, optional
-        Uses the modulus of each data (|Z|) as the weighting factor.
-        Standard weighting scheme when experimental variances are unavailable.
-        Only applicable when global_opt = False
-
-    global_opt : bool, optional
-        If global optimization should be used (uses the basinhopping
-        algorithm). Defaults to False
-
-    kwargs :
-        Keyword arguments passed to scipy.optimize.curve_fit or
-        scipy.optimize.basinhopping
-
-    Returns
-    ------------
-    p_values : list of floats
-        best fit parameters for specified equivalent circuit
-
-    p_errors : list of floats
-        one standard deviation error estimates for fit parameters
-
-    Notes
-    ---------
-    Need to do a better job of handling errors in fitting.
-    Currently, an error of -1 is returned.
-
+    For detalis refer to impedance.models.circuits.fittting.circuit_fit
     """
     f = np.array(frequencies, dtype=float)
     Z = np.array(impedances, dtype=complex)
